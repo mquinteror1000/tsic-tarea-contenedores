@@ -1,6 +1,6 @@
 # Tarea Contenedores TSIC2
 
-## Parte 1 solo el servidor web con python
+## Parte 1: solo el servidor web con python
 
 se Crearon lo archivos indicados  **Containerfile** y **server.py** demás del script **01-run-web-python.sh**
 
@@ -65,19 +65,93 @@ nginx02
 
 y seguia fallando, investigando se llega a la conclusión de que cuando se curl con localhost intenta resolver en ipv6 . asi que se usará mejor la dirección ipv4 127.0.0.1 **01-run-web-python.sh**
 
-```bash
-#! /bin/sh
-echo correr la primer parte: servidor web con python puro
-
-cd web-python
-podman build -t py-web:1.0 .
-podman run -d --name web -p 8080:8080 py-web:1.0
-
-curl http://127.0.0.1:8080
-curl http://127.0.0.1:8080/health
-podman logs web
+```shellsession
+<h1>Hola desde Podman</h1><p>Contenedor: ecc5b1b29151</p><p>Hora: 2026-09-24 23:24:32</p>martin@rocky10:~/tsic-tarea-contenedores$ curl 127.0.0.1:8080/healt
+<h1>Hola desde Podman</h1><p>Contenedor: ecc5b1b29151</p><p>Hora: 2026-09-24 23:24:38</p>martin@rocky10:~/tsic-tarea-contenedores$
 ```
 
-Se elimina el contenedor y se recrea
 
 
+## Parte 2: potgres con usuarios
+
+En la carpeta db_podgres se crea en **Containerfile** y el archivo de inicialización **init.sql**
+
+```shellsession
+db-postgres/
+├── Containerfile
+└── init.sql
+```
+
+tambien se crean los scripts
+
+- 02-01-crea-db-posgres.sh   : Para crear el contenedor de posgres
+
+- 02-02-usa-posgres.sh        : para hacer las pruebas
+
+Se ejecuta el primero **02-01-crea-db-posgres.sh**
+
+```shellsession
+martin@rocky10:~/tsic-tarea-contenedores$ sh 02-01-crea-db-posgres.sh 
+A CONTINUACIÓN DE CREARÁ EL CONTENDOR POSTGRES  
+STEP 1/5: FROM docker.io/library/postgres:16
+STEP 2/5: LABEL description="PostgreSQL con usuarios y datos iniciales"
+--> Using cache 0f9ec7146c025013c58ca0240a1a165df02fec2cf55075df6e48e327afb51e8a
+--> 0f9ec7146c02
+STEP 3/5: COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+--> Using cache a6794f9ac1e08daa9372becff36b9ac3e468b17ec976476eb7c8806af70699e7
+--> a6794f9ac1e0
+STEP 4/5: ENV TZ=America/Mexico_City
+--> Using cache 5d6aa1f9a463575873a20af3ba8323466820507062792e40a6b45f3640117bc6
+--> 5d6aa1f9a463
+STEP 5/5: EXPOSE 5432
+--> Using cache 3139517553f1190bcb1d38bbcac876d69c90dfb04dfe0354c1bdbbdf9421b30f
+COMMIT pg-usuarios:1.0
+--> 3139517553f1
+Successfully tagged localhost/pg-usuarios:1.0
+3139517553f1190bcb1d38bbcac876d69c90dfb04dfe0354c1bdbbdf9421b30f
+Error: volume with name pgdata already exists: volume already exists
+f493aa51795b53254e17898086d40960b3d3ef5340685075eeb10aefb9483463
+```
+
+Se listan los contenedores
+
+```shellsession
+martin@rocky10:~/tsic-tarea-contenedores$ podman container list
+CONTAINER ID  IMAGE                      COMMAND           CREATED         STATUS         PORTS                   NAMES
+ecc5b1b29151  localhost/py-web:1.0       python server.py  28 minutes ago  Up 28 minutes  0.0.0.0:8080->8080/tcp  web
+f493aa51795b  localhost/pg-usuarios:1.0  postgres          21 seconds ago  Up 21 seconds  0.0.0.0:5432->5432/tcp  db
+```
+
+y se ejecuta el segundo sccript para hacer las pruebas
+
+```shellsession
+martin@rocky10:~/tsic-tarea-contenedores$ sh 02-02-usa-posgres.sh 
+MOSTRAR LOS USUARIOS CREDOS
+                             List of roles
+ Role name |                         Attributes                         
+-----------+------------------------------------------------------------
+ app_user  | 
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS
+ reporte   | 
+
+CONSULTAR COMO APP_USER Y COMO REPORTE
+ id |      nombre       | cantidad |           creado           
+----+-------------------+----------+----------------------------
+  1 | Servidor ProLiant |        4 | 2026-09-24 17:35:15.314784
+  2 | Switch 48p        |        2 | 2026-09-24 17:35:15.314784
+  3 | Disco NVMe 3.84TB |       12 | 2026-09-24 17:35:15.314784
+(3 rows)
+
+ count 
+-------
+     3
+(1 row)
+
+REPORTE NO PUEDE ESCRIBIR, DEBE FALLAR
+ERROR:  permission denied for table productos
+
+```
+
+Las cuales son correctas
+
+## Parte 3:

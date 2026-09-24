@@ -1,0 +1,10 @@
+FROM docker.io/library/postgres:16
+
+LABEL description="PostgreSQL con usuarios y datos iniciales"
+
+# Se ejecuta solo si el directorio de datos está vacío
+COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+
+ENV TZ=America/Mexico_City
+
+EXPOSE 5432
