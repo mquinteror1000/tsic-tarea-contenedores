@@ -1,0 +1,5 @@
+# Las líneas con # y las vacías se ignoran
+daniel:Daniel2026!
+ana:Ana2026!
+alumno1:Alumno2026!
+alumno2:Alumno2026!

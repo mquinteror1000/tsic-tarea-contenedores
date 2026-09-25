@@ -1,0 +1,31 @@
+FROM docker.io/library/ubuntu:24.04
+
+LABEL description="Ubuntu actualizado con usuarios desde usuarios.txt"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=America/Mexico_City
+
+# 1. Actualizar el sistema operativo e instalar utilerías básicas
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -y --no-install-recommends sudo tzdata vim-tiny iputils-ping && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Copiar el archivo que está en la misma ruta que este Containerfile
+COPY usuarios.txt /tmp/usuarios.txt
+
+# 3. Crear grupo y usuarios leyendo el archivo
+RUN groupadd -f devops && \
+    while IFS=: read -r usuario clave || [ -n "$usuario" ]; do \
+      case "$usuario" in ''|'#'*) continue ;; esac; \
+      useradd -m -s /bin/bash -G devops "$usuario"; \
+      echo "$usuario:$clave" | chpasswd; \
+      echo "Usuario creado: $usuario"; \
+    done < /tmp/usuarios.txt && \
+    echo '%devops ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/devops && \
+    chmod 440 /etc/sudoers.d/devops && \
+    rm -f /tmp/usuarios.txt
+
+WORKDIR /home
+
+CMD ["/bin/bash"]
